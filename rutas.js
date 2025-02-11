@@ -266,4 +266,121 @@ rutas.post('/paises/insertarMultiplesPaises', (req, res) => {
    });
 });
 
+//--###############################################################
+//                      RUTAS DE USUARIOS
+//--###############################################################
+
+// 📌 1. Insertar un nuevo usuario
+rutas.post('/usuarios/insertarUnUsuario', (req, res) => {
+   const { nombre, email, password_hash, pais_id, rol_id, estado } = req.body;
+
+   if (!nombre || !email || !password_hash || !pais_id || !rol_id) {
+      return res
+         .status(400)
+         .json({ mensaje: 'Todos los campos son requeridos' });
+   }
+
+   const query =
+      'INSERT INTO usuarios (nombre, email, password_hash, pais_id, rol_id, estado) VALUES (?, ?, ?, ?, ?, ?)';
+   conexion.query(
+      query,
+      [nombre, email, password_hash, pais_id, rol_id, estado || 'ACTIVO'],
+      (err, result) => {
+         if (err) {
+            console.error('Error al insertar usuario:', err);
+            return res
+               .status(500)
+               .json({ mensaje: 'Error al insertar usuario', error: err });
+         }
+
+         res.status(201).json({
+            mensaje: 'Usuario insertado correctamente',
+            usuario_id: result.insertId,
+         });
+      }
+   );
+});
+
+// 📌 2. Consultar un usuario por usuario_id
+rutas.get('/usuarios/consultarUnUsuario/:usuario_id', (req, res) => {
+   const { usuario_id } = req.params;
+
+   const query = 'SELECT * FROM usuarios WHERE usuario_id = ?';
+   conexion.query(query, [usuario_id], (err, result) => {
+      if (err) {
+         console.error('Error al consultar usuario:', err);
+         return res
+            .status(500)
+            .json({ mensaje: 'Error al consultar usuario', error: err });
+      }
+
+      if (result.length === 0) {
+         return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+      }
+
+      res.status(200).json({
+         mensaje: 'Usuario encontrado',
+         usuario: result[0],
+      });
+   });
+});
+
+// 📌 3. Editar un usuario por usuario_id
+rutas.put('/usuarios/editarUnUsuario/:usuario_id', (req, res) => {
+   const { usuario_id } = req.params;
+   const { nombre, email, password_hash, pais_id, rol_id, estado } = req.body;
+
+   const query = `
+        UPDATE usuarios 
+        SET nombre = ?, email = ?, password_hash = ?, pais_id = ?, rol_id = ?, estado = ? 
+        WHERE usuario_id = ?
+    `;
+
+   conexion.query(
+      query,
+      [nombre, email, password_hash, pais_id, rol_id, estado, usuario_id],
+      (err, result) => {
+         if (err) {
+            console.error('Error al actualizar usuario:', err);
+            return res
+               .status(500)
+               .json({ mensaje: 'Error al actualizar usuario', error: err });
+         }
+
+         if (result.affectedRows === 0) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+         }
+
+         res.status(200).json({
+            mensaje: 'Usuario actualizado correctamente',
+            usuario_id,
+         });
+      }
+   );
+});
+
+// 📌 4. Eliminar un usuario por usuario_id
+rutas.delete('/usuarios/eliminarUnUsuario/:usuario_id', (req, res) => {
+   const { usuario_id } = req.params;
+
+   const query = 'DELETE FROM usuarios WHERE usuario_id = ?';
+   conexion.query(query, [usuario_id], (err, result) => {
+      if (err) {
+         console.error('Error al eliminar usuario:', err);
+         return res
+            .status(500)
+            .json({ mensaje: 'Error al eliminar usuario', error: err });
+      }
+
+      if (result.affectedRows === 0) {
+         return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+      }
+
+      res.status(200).json({
+         mensaje: 'Usuario eliminado correctamente',
+         usuario_id,
+      });
+   });
+});
+
 module.exports = rutas;
