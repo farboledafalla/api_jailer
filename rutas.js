@@ -9,6 +9,10 @@ rutas.get('/', function (req, res) {
    res.send('Hola desde la ruta raíz: /');
 });
 
+//--###############################################################
+//                      RUTAS DE ROLES
+//--###############################################################
+
 // Ruta para insertar un solo rol
 rutas.post('/roles/insertarUnRol', (req, res) => {
    const { nombre_rol } = req.body; // Obtener el nombre del rol desde el cuerpo de la solicitud (Objeto)
@@ -194,6 +198,70 @@ rutas.delete('/roles/eliminarUnRolPorId/:rol_id', (req, res) => {
             mensaje: 'Rol eliminado correctamente',
             rol_eliminado: { rol_id, nombre_rol },
          });
+      });
+   });
+});
+
+//--###############################################################
+//                      RUTAS DE CONTINENTES
+//--###############################################################
+
+// Ruta para insertar múltiples continentes
+rutas.post('/continentes/insertarMultiplesContinentes', (req, res) => {
+   const continentes = req.body;
+
+   if (!Array.isArray(continentes) || continentes.length === 0) {
+      return res.status(400).json({
+         mensaje: 'Se esperaba un arreglo con al menos un continente',
+      });
+   }
+
+   const query = 'INSERT INTO continentes (nombre_continente) VALUES ?';
+   const valores = continentes.map((cont) => [cont.nombre_continente]);
+
+   conexion.query(query, [valores], (err, result) => {
+      if (err) {
+         console.error('Error al insertar continentes:', err);
+         return res
+            .status(500)
+            .json({ mensaje: 'Error al insertar continentes', error: err });
+      }
+
+      res.status(201).json({
+         mensaje: 'Continentes insertados correctamente',
+         result,
+      });
+   });
+});
+
+//--###############################################################
+//                      RUTAS DE PAISES
+//--###############################################################
+
+// Ruta para insertar múltiples países con su continente_id
+rutas.post('/paises/insertarMultiplesPaises', (req, res) => {
+   const paises = req.body;
+
+   if (!Array.isArray(paises) || paises.length === 0) {
+      return res
+         .status(400)
+         .json({ mensaje: 'Se esperaba un arreglo con al menos un país' });
+   }
+
+   const query = 'INSERT INTO Paises (nombre_pais, continente_id) VALUES ?';
+   const valores = paises.map((pais) => [pais.nombre_pais, pais.continente_id]);
+
+   conexion.query(query, [valores], (err, result) => {
+      if (err) {
+         console.error('Error al insertar países:', err);
+         return res
+            .status(500)
+            .json({ mensaje: 'Error al insertar países', error: err });
+      }
+
+      res.status(201).json({
+         mensaje: 'Países insertados correctamente',
+         result,
       });
    });
 });
