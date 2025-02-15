@@ -2,6 +2,7 @@
 const rutas = require('express').Router();
 
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 //Conexión bd
 const conexion = require('./config/conexion');
@@ -420,6 +421,39 @@ rutas.post('/register', async (req, res) => {
    } catch (error) {
       res.status(500).json({ error: 'Error en el servidor' });
    }
+});
+
+// Inicio de sesión
+rutas.post('/login', (req, res) => {
+   const { username, password } = req.body;
+
+   const sql = 'SELECT * FROM Usuarios WHERE email = ?';
+   conexion.query(sql, [username], (err, results) => {
+      if (err) {
+         return res.status(500).json({ error: 'Error al buscar el usuario' });
+      }
+      if (results.length === 0) {
+         return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const user = results[0];
+      const passwordIsValid = bcrypt.compareSync(password, user.password_hash);
+
+      if (!passwordIsValid) {
+         return res.status(401).json({ error: 'Contraseña incorrecta' });
+      }
+
+      // Creación del token usando datos del usuario
+      const token = jwt.sign(
+         { id: user.id, username: user.username },
+         secretKey,
+         {
+            expiresIn: 3600, // 2 horas, (86400) 24 horas
+         }
+      );
+
+      res.json({ auth: true, token });
+   });
 });
 
 module.exports = rutas;
