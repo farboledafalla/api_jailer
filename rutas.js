@@ -1,6 +1,9 @@
 //Router
 const rutas = require('express').Router();
 
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
 //Conexión bd
 const conexion = require('./config/conexion');
 
@@ -380,6 +383,76 @@ rutas.delete('/usuarios/eliminarUnUsuario/:usuario_id', (req, res) => {
          mensaje: 'Usuario eliminado correctamente',
          usuario_id,
       });
+   });
+});
+
+// Autenticación
+const secretKey = 'your_secret_key';
+
+// Registro
+rutas.post('/register', async (req, res) => {
+   try {
+      const { name, username, password } = req.body;
+
+      //Validar que el password no venga vacio
+      if (!password) {
+         return res.status(400).json({ error: 'La contraseña es obligatoria' });
+      }
+
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds); // Hash de la contraseña
+      const pais_id = 261;
+      const rol_id = 3;
+
+      const sql =
+         'INSERT INTO usuarios (nombre, email, password_hash,pais_id,rol_id) VALUES (?, ?, ?, ?, ?)';
+      conexion.query(
+         sql,
+         [name, username, hashedPassword, pais_id, rol_id],
+         (err, result) => {
+            if (err) {
+               return res
+                  .status(500)
+                  .json({ error: 'Error al registrar el usuario' });
+            }
+            res.json({ status: 'Usuario registrado' });
+         }
+      );
+   } catch (error) {
+      res.status(500).json({ error: 'Error en el servidor' });
+   }
+});
+
+// Inicio de sesión
+rutas.post('/login', (req, res) => {
+   const { username, password } = req.body;
+
+   const sql = 'SELECT * FROM Usuarios WHERE email = ?';
+   conexion.query(sql, [username], (err, results) => {
+      if (err) {
+         return res.status(500).json({ error: 'Error al buscar el usuario' });
+      }
+      if (results.length === 0) {
+         return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const user = results[0];
+      const passwordIsValid = bcrypt.compareSync(password, user.password_hash);
+
+      if (!passwordIsValid) {
+         return res.status(401).json({ error: 'Contraseña incorrecta' });
+      }
+
+      // Creación del token usando datos del usuario
+      const token = jwt.sign(
+         { id: user.id, username: user.username },
+         secretKey,
+         {
+            expiresIn: 3600, // 2 horas, (86400) 24 horas
+         }
+      );
+
+      res.json({ auth: true, token });
    });
 });
 

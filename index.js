@@ -12,6 +12,10 @@ app.use(express.json());
 const port = process.env.port || 3000;
 app.set('port', port);
 
+//cors
+const cors = require('cors');
+app.use(cors());
+
 //rutas
 app.use(require('./rutas'));
 
