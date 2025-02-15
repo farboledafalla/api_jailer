@@ -1,6 +1,8 @@
 //Router
 const rutas = require('express').Router();
 
+const bcrypt = require('bcrypt');
+
 //Conexión bd
 const conexion = require('./config/conexion');
 
@@ -381,6 +383,43 @@ rutas.delete('/usuarios/eliminarUnUsuario/:usuario_id', (req, res) => {
          usuario_id,
       });
    });
+});
+
+// Autenticación
+const secretKey = 'your_secret_key';
+
+// Registro
+rutas.post('/register', async (req, res) => {
+   try {
+      const { name, username, password } = req.body;
+
+      //Validar que el password no venga vacio
+      if (!password) {
+         return res.status(400).json({ error: 'La contraseña es obligatoria' });
+      }
+
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds); // Hash de la contraseña
+      const pais_id = 261;
+      const rol_id = 3;
+
+      const sql =
+         'INSERT INTO usuarios (nombre, email, password_hash,pais_id,rol_id) VALUES (?, ?, ?, ?, ?)';
+      conexion.query(
+         sql,
+         [name, username, hashedPassword, pais_id, rol_id],
+         (err, result) => {
+            if (err) {
+               return res
+                  .status(500)
+                  .json({ error: 'Error al registrar el usuario' });
+            }
+            res.json({ status: 'Usuario registrado' });
+         }
+      );
+   } catch (error) {
+      res.status(500).json({ error: 'Error en el servidor' });
+   }
 });
 
 module.exports = rutas;
